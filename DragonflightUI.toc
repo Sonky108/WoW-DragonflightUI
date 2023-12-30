@@ -26,6 +26,7 @@ Config.lua
 
 # XML
 XML\Castbar.xml
+XML\Talents.xml
 
 # Modules
 Modules\Actionbar.lua
@@ -33,6 +34,7 @@ Modules\Castbar.lua
 Modules\Chat.lua
 Modules\Minimap.lua
 Modules\Unitframe.lua
+Modules\Talents.lua
 
 #
 Compatibility.lua

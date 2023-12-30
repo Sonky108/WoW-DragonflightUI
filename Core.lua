@@ -7,7 +7,7 @@ DF.Era = DF.InterfaceVersion <= 20000
 
 local defaults = {
     profile = {
-        modules = {['Actionbar'] = true, ['Castbar'] = true, ['Chat'] = false, ['Minimap'] = true, ['Unitframe'] = true},
+        modules = {['Actionbar'] = true, ['Castbar'] = true, ['Chat'] = false, ['Minimap'] = true, ['Unitframe'] = true, ['Talents'] = true},
         bestnumber = 42
     }
 }
@@ -48,7 +48,7 @@ function DF:SetModuleEnabled(module, value)
 end
 
 local name, realm = UnitName('player')
-local showDebug = name == 'Zimtdev'
+local showDebug = name == 'Pedzacyqtz'
 function DF:Debug(m, value)
     if showDebug then m:Print(value) end
 end
