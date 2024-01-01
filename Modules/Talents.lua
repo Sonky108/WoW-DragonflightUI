@@ -4,11 +4,29 @@ local Module = DF:NewModule(mName, 'AceConsole-3.0')
 
 Mixin(Module, DragonFlightUITalentsMixin)
 
-ActiveTalentIDs = {[86] = true, [87] = true, [29] = true, [32] = true, [36] = true, [69] = true,
-[71] = true}
+ActiveTalentIDs = {
+    --mage
+    [86] = true,
+    [87] = true,
+    [29] = true,
+    [32] = true,
+    [36] = true,
+    [69] = true,
+    [71] = true
+    --
+}
 
 local db
 local background
+
+local defaults = {
+    profile = {
+        talentSize = 36,
+        padding = 22,
+        scale = 1.0
+    }
+}
+
 local function getOption(info)
     return db[info[#info]]
 end
@@ -16,7 +34,10 @@ end
 local function setOption(info, value)
     local key = info[1]
     Module.db.profile[key] = value
-    --Module.ApplySettings()
+end
+
+local function setDefaultValues()
+    for k, v in pairs(defaults.profile) do Module.db.profile[k] = v end
 end
 
 local options = {
@@ -36,7 +57,7 @@ local options = {
             end,
             order = 1
         },
-        
+
         reload = {
             type = 'execute',
             name = '/reload',
@@ -46,7 +67,14 @@ local options = {
             end,
             order = 1.1
         },
-        config = {type = 'header', name = 'Config - Player', order = 100},
+        defaults = {
+            type = 'execute',
+            name = 'Defaults',
+            desc = 'Sets Config to default values',
+            func = setDefaultValues,
+            order = 1.1
+        },
+        config = { type = 'header', name = 'Config - Player', order = 100 },
         talentSize = {
             type = 'range',
             name = 'Talent size',
@@ -65,24 +93,14 @@ local options = {
             desc = 'Padding',
             order = 1.3
         },
-        WindowWidth = {
+        scale = {
             type = 'range',
-            min = 500,
-            max = 1500,
-            bigStep = 10,
-            name = 'WindowWidth',
-            desc = 'WindowWidth',
+            min = 0.2,
+            max = 2.0,
+            bigStep = 0.1,
+            name = 'scale',
             order = 1.4
         },
-        WindowHeight = {
-            type = 'range',
-            min = 400,
-            max = 1000,
-            bigStep = 1,
-            name = 'WindowHeight',
-            desc = 'WindowHeight',
-            order = 1.5
-        }
     }
 }
 
@@ -105,7 +123,7 @@ function Module:OnEnable()
 end
 
 function Module.Wrath()
-    local Hide = function( self)
+    local Hide = function(self)
         self:Hide()
     end
     PlayerTalentFrameTab1:HookScript("OnShow", Hide);
@@ -123,40 +141,41 @@ function Module.Wrath()
     PlayerTalentFrameBottomLeft:HookScript("OnShow", Hide);
     PlayerTalentFramePortrait:HookScript("OnShow", Hide);
     PlayerTalentFramePointsBar:HookScript("OnShow", Hide);
-    PlayerTalentFrame:SetSize(Module.db.profile.WindowWidth, Module.db.profile.WindowHeight)
+    local sizeX, sizeY = Module:GetWindowSize()
+    PlayerTalentFrame:SetSize(sizeX, sizeY)
 
     PlayerTalentFrameCloseButton:ClearAllPoints()
     PlayerTalentFrameCloseButton:SetPoint("TOPRIGHT", PlayerTalentFrame, "TOPRIGHT", 0, 0)
-    
+
     background = CreateFrame("FRAME", "MyBackground", PlayerTalentFrame)
     --background:SetPoint("CENTER", 22, -35)
     background:ClearAllPoints()
     background:SetPoint("CENTER", PlayerTalentFrame, "CENTER", 0, 0)
 
-    background:SetSize(Module.db.profile.WindowWidth, Module.db.profile.WindowHeight)-- Set these to whatever height/width is needed 
+    background:SetSize(sizeX, sizeY) -- Set these to whatever height/width is needed
 
-    background.texture = background:CreateTexture("TalentBakground", "BACKGROUND")
-    background.texture:SetTexture('Interface\\AddOns\\DragonflightUI\\Textures\\Talents\\Classes\\mage')
-    background.texture:ClearAllPoints()
-    background.texture:SetAllPoints(background)
-    background.texture:SetTexCoord(0, 1614 / 2048, 0, 388 / 512)
+    background.classImage = background:CreateTexture("TalentBakground", "BACKGROUND")
+    background.classImage:SetTexture('Interface\\AddOns\\DragonflightUI\\Textures\\Talents\\Classes\\mage')
+    background.classImage:ClearAllPoints()
+    background.classImage:SetPoint("CENTER", background, "CENTER")
+    background.classImage:SetTexCoord(0, 1614 / 2048, 0, 776 / 1024)
 
-    background.texture:SetSize(Module.db.profile.WindowWidth, Module.db.profile.WindowHeight) -- Set these to whatever height/width is needed 
+    background.classImage:SetSize(sizeX, sizeY) -- Set these to whatever height/width is needed
 
     for i = 1, GetNumTalentTabs() do
-        for j = 1,  GetNumTalents(i) do
+        for j = 1, GetNumTalents(i) do
             print(i, j, GetTalentInfo(i, j))
             Module:DoButton(i, j)
         end
     end
 
     local setPoint = PlayerTalentFrame.SetPoint
-    hooksecurefunc(PlayerTalentFrame, "SetPoint", function (self)
+    hooksecurefunc(PlayerTalentFrame, "SetPoint", function(self)
         self:ClearAllPoints()
         setPoint(self, 'CENTER')
     end)
 
-    PlayerTalentFrame:HookScript("OnShow", function (self)
+    PlayerTalentFrame:HookScript("OnShow", function(self)
         -- background.texture:SetAllPoints(background)
         -- background.texture:SetTexture('Interface\\AddOns\\DragonflightUI\\Textures\\Talents\\Classes\\mage_small')
         -- background.texture:SetColorTexture(1, 1, 1, 1)
@@ -164,28 +183,34 @@ function Module.Wrath()
     end)
 end
 
-function Module:DoButton(i, j)
-    local size = Module.db.profile.talentSize;
-    local borderSize = 3;
+function Module:GetWindowSize()
+    return 1614 * Module.db.profile.scale, 776 * Module.db.profile.scale
+end
 
-    local name, iconTexture, tier, column, rank, maxRank, isExceptional, available, hopsa, kol, koniec = GetTalentInfo(i, j)
+function Module:DoButton(i, j)
+    local size = Module.db.profile.talentSize
+    local borderSize = 4;
+
+    local _, iconTexture, tier, column, rank, maxRank, _, available, _, _, talentID = GetTalentInfo(i,
+        j)
     local newButton = CreateFrame("Button", nil, PlayerTalentFrame)
     local buttonPosX, buttonPosY = Module:GetButtonPosition(column, tier, i)
+
     newButton:SetPoint("TOPLEFT", buttonPosX, buttonPosY)
-    newButton:SetSize(size, size) -- Set these to whatever height/width is needed 
-
+    newButton:SetSize(size, size)
     newButton:EnableMouseMotion(true)
-    print(GetTalentPrereqs(i,j))
 
-    local prereqsY, prereqsX, ee, wwae = GetTalentPrereqs(i,j);
+    local prereqsY, prereqsX, _, _ = GetTalentPrereqs(i, j);
     if prereqsX and prereqsY then
-        local prereqPosX, prereqPosY = Module:GetButtonPosition(prereqsX + 1, prereqsY, i)
+        --local prereqPosX, prereqPosY = Module:GetButtonPosition(column + 1, tier, i)
+        local prereqPosX, prereqPosY = Module:GetButtonPosition(prereqsX, prereqsY, i)
+
         Module:ConnectTalents(buttonPosX, buttonPosY, prereqPosX, prereqPosY)
     end
-   
+
     local mask = newButton:CreateMaskTexture()
 
-    local isActiveTalent = Module:IsActiveTalent(koniec)
+    local isActiveTalent = Module:IsActiveTalent(talentID)
 
     if isActiveTalent then
         mask:SetMask('Interface\\AddOns\\DragonflightUI\\Textures\\Talents\\talentsmasknodechoiceflyout')
@@ -198,8 +223,8 @@ function Module:DoButton(i, j)
     mask:SetPoint("CENTER")
 
     newButton.background = newButton:CreateTexture("ButtonBackground", "BACKGROUND")
-    
-    local backgroundTexture, borderTexture
+
+    local backgroundTexture, borderTexture;
     if isActiveTalent then
         backgroundTexture = 'Interface\\AddOns\\DragonflightUI\\Textures\\Talents\\active_background'
         if rank == maxRank then
@@ -217,7 +242,6 @@ function Module:DoButton(i, j)
     end
 
     newButton.background:SetTexture(backgroundTexture)
-    --newButton.background:SetTexCoord(2 / 64, (64 - 2) / 64, 2 / 64, (64 - 2) / 64)
     newButton.background:AddMaskTexture(mask)
     newButton.background:SetAllPoints(newButton)
 
@@ -229,7 +253,7 @@ function Module:DoButton(i, j)
     newButton.icon:SetPoint("CENTER", newButton, "CENTER")
 
     newButton.border = newButton:CreateTexture("Border", "OVERLAY")
-    newButton.border:SetTexture(borderTexture)
+    newButton.border:SetTexture(borderTexture, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE", "TRILINEAR")
     newButton.border:AddMaskTexture(mask)
     newButton.border:SetSize(size, size)
     newButton.border:SetPoint("CENTER", newButton, "CENTER")
@@ -238,15 +262,13 @@ function Module:DoButton(i, j)
         newButton.icon:SetDesaturated(1)
     end
 
-    newButton:HookScript("OnEnter", function (self)
-        --self.texture:SetVertexColor(1.0, 0.0, 0.0)
+    newButton:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self)
         GameTooltip:SetTalent(i, j)
         GameTooltip:Show()
     end)
 
-    newButton:HookScript("OnLeave", function (self)
-        --self.texture:SetVertexColor(1.0, 1.0, 1.0)
+    newButton:HookScript("OnLeave", function(self)
         GameTooltip:Hide()
     end)
 end
@@ -254,12 +276,14 @@ end
 function Module:GetButtonPosition(column, row, tab)
     local padding = Module.db.profile.padding
     local size = Module.db.profile.talentSize
-    local windowWidth = Module.db.profile.WindowWidth
+    local windowWidth, _ = Module:GetWindowSize()
 
+    --assuming 4 columns per tree and 3 trees
     local reqTabSize = size * 4 + padding * 3
     local tabSpace = windowWidth / 3
 
-    return ((tab - 1) * tabSpace + (tabSpace - reqTabSize) / 2) + (column - 1) * (size + padding), -row * (size + padding)
+    return ((tab - 1) * tabSpace + (tabSpace - reqTabSize) / 2) + (column - 1) * (size + padding),
+        -row * (size + padding)
 end
 
 function Module:IsActiveTalent(ID)
@@ -267,42 +291,55 @@ function Module:IsActiveTalent(ID)
 end
 
 function Module:ConnectTalents(toX, toY, fromX, fromY)
-    print(toX, toY, fromX, fromY, "CONNECT")
     local size = Module.db.profile.talentSize
-    local lineWidth = 16;
+
+    --well, when drawing line between two adjacent atlent buttons, move from point up to the middle of the button
+    if toY == fromY then
+        toY = toY - size / 2
+        fromY = toY
+        fromX = fromX - size / 2
+    else
+        fromY = fromY - size
+    end
+
+    local lineWidth = 20;
 
     local arrowLine = CreateFrame("FRAME", "ArrowLine", PlayerTalentFrame)
-    --background:SetPoint("CENTER", 22, -35)
     arrowLine:ClearAllPoints()
-    local anchor = "BOTTOM"
-    
-    arrowLine:SetPoint(anchor, PlayerTalentFrame, "TOPLEFT", toX  + (size) / 2, toY)
-    arrowLine:SetSize(lineWidth, math.sqrt(math.pow(math.abs(toY) - math.abs(fromY), 2) + math.pow(math.abs(toX) - math.abs(fromX), 2)))
+    arrowLine:SetPoint("BOTTOM", PlayerTalentFrame, "TOPLEFT", toX + (size) / 2, toY)
+    arrowLine:SetSize(lineWidth,
+        math.sqrt(math.pow(math.abs(toY) - math.abs(fromY), 2) + math.pow(math.abs(toX) - math.abs(fromX), 2)))
 
     arrowLine.texture = arrowLine:CreateTexture("Line", "ARTWORK")
-    arrowLine.texture:SetTexture('Interface\\AddOns\\DragonflightUI\\Textures\\Talents\\arrow_line_gold', "CLAMP", "REPEAT", "TRILINEAR")
+    arrowLine.texture:SetTexture('Interface\\AddOns\\DragonflightUI\\Textures\\Talents\\arrow_line_gold', "CLAMP",
+        "REPEAT", "TRILINEAR")
     arrowLine.texture:SetHorizTile(false)
     arrowLine.texture:SetVertTile(true)
-
     arrowLine.texture:ClearAllPoints()
     arrowLine.texture:SetAllPoints(arrowLine)
 
-    local from = {fromX, fromY}
-    local to = {toX, toY}
-    local vec = {toX - fromX, toY - fromY};
-    local Left = {0, -1}
+    arrowLine.pointerTexture = arrowLine:CreateTexture("Pointer", "ARTWORK")
+    arrowLine.pointerTexture:SetTexture('Interface\\AddOns\\DragonflightUI\\Textures\\Talents\\arrow_gold', "CLAMP",
+        "REPEAT", "TRILINEAR")
 
-    local ansAgain = math.acos(Module:myDot(vec, Left) / (Module:myMag(vec) * Module:myMag(Left)))
+    arrowLine.pointerTexture:SetDrawLayer("ARTWORK", 7)
+
+    local arrowSize = 20
+    arrowLine.pointerTexture:SetSize(arrowSize, arrowSize)
+    arrowLine.pointerTexture:SetPoint("BOTTOM", PlayerTalentFrame, "TOPLEFT", toX + size / 2, toY)
+
+    local vec = { toX - fromX, toY - fromY };
+    local dir = { 0, -1 }
+
+    local ansAgain = math.acos(Module:Dot(vec, dir) / (Module:Mag(vec) * Module:Mag(dir)))
 
     if fromX < toX then
-        arrowLine.texture:SetRotation(ansAgain, {x =0.5, y =0})
+        arrowLine.texture:SetRotation(ansAgain, { x = 0.5, y = 0 })
+        arrowLine.pointerTexture:SetRotation(ansAgain, { x = 0.5, y = 0 })
     else
-        arrowLine.texture:SetRotation(-ansAgain, {x =0.5, y =0})
+        arrowLine.texture:SetRotation(-ansAgain, { x = 0.5, y = 0 })
+        arrowLine.pointerTexture:SetRotation(-ansAgain, { x = 0.5, y = 0 })
     end
-    
-    --arrowLine.texture:SetSize(arrowLine:GetWidth(), arrowLine:GetHeight())
-    --arrowLine.texture:SetSize(arrowLine:GetHeight(), arrowLine:GetWidth())
-    print(math.deg(ansAgain), "ANGUL")
 end
 
 -- Era
@@ -310,10 +347,10 @@ function Module.Era()
     Module.Wrath()
 end
 
-function Module:myDot(a, b)
+function Module:Dot(a, b)
     return (a[1] * b[1]) + (a[2] * b[2])
 end
 
-function Module:myMag(a)
+function Module:Mag(a)
     return math.sqrt((a[1] * a[1]) + (a[2] * a[2]))
 end
