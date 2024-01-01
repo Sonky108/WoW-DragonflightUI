@@ -147,20 +147,32 @@ function Module.Wrath()
     PlayerTalentFrameCloseButton:ClearAllPoints()
     PlayerTalentFrameCloseButton:SetPoint("TOPRIGHT", PlayerTalentFrame, "TOPRIGHT", 0, 0)
 
-    background = CreateFrame("FRAME", "MyBackground", PlayerTalentFrame)
+    background = CreateFrame("FRAME", "MyBackground", PlayerTalentFrame, "BackdropTemplate")
+    
     --background:SetPoint("CENTER", 22, -35)
     background:ClearAllPoints()
     background:SetPoint("CENTER", PlayerTalentFrame, "CENTER", 0, 0)
 
-    background:SetSize(sizeX, sizeY) -- Set these to whatever height/width is needed
+    background:SetSize(sizeX, sizeY) 
+    local backdropInfo =
+    {
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileEdge = true,
+        tileSize = 8,
+        edgeSize = 8,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 },
+    }
 
+    background:SetBackdrop(backdropInfo)
     background.classImage = background:CreateTexture("TalentBakground", "BACKGROUND")
     background.classImage:SetTexture('Interface\\AddOns\\DragonflightUI\\Textures\\Talents\\Classes\\mage')
     background.classImage:ClearAllPoints()
     background.classImage:SetPoint("CENTER", background, "CENTER")
     background.classImage:SetTexCoord(0, 1614 / 2048, 0, 776 / 1024)
 
-    background.classImage:SetSize(sizeX, sizeY) -- Set these to whatever height/width is needed
+    background.classImage:SetSize(sizeX - 2, sizeY - 2) -- Set these to whatever height/width is needed
 
     for i = 1, GetNumTalentTabs() do
         for j = 1, GetNumTalents(i) do
@@ -302,7 +314,7 @@ function Module:ConnectTalents(toX, toY, fromX, fromY)
         fromY = fromY - size
     end
 
-    local lineWidth = 20;
+    local lineWidth = 8;
 
     local arrowLine = CreateFrame("FRAME", "ArrowLine", PlayerTalentFrame)
     arrowLine:ClearAllPoints()
@@ -341,6 +353,15 @@ function Module:ConnectTalents(toX, toY, fromX, fromY)
         arrowLine.pointerTexture:SetRotation(-ansAgain, { x = 0.5, y = 0 })
     end
 end
+
+function Module.MakeBorder()
+    local bottomLeft = PlayerTalentFrame:CreateTexture("Border", "ARTWORK")
+    bottomLeft:SetTexture('Interface\\Common\\ThinBorder-BottomLeft')
+    bottomLeft:ClearAllPoints()
+    bottomLeft:SetPoint("BOTTOMLEFT", PlayerTalentFrame, "BOTTOMLEFT")
+    bottomLeft:SetSize(32, 32)
+end
+
 
 -- Era
 function Module.Era()
